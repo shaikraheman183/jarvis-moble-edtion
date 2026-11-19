@@ -1,1 +1,78 @@
 
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>J.A.R.V.I.S Brain Test</title>
+<style>
+  body{background:#000;color:#0ff;font-family:monospace;padding:20px}
+  h1{text-align:center;letter-spacing:4px}
+  #status{color:#f00;text-align:center;margin-bottom:15px;font-weight:bold}
+  textarea{width:100%;background:#001a1a;color:#0ff;border:1px solid #0ff;padding:10px;box-sizing:border-box}
+  button{width:100%;padding:14px;background:#0ff;color:#000;font-weight:bold;border:none;margin-top:10px;font-size:16px}
+  #reply{border:1px solid #0ff;padding:12px;margin-top:15px;min-height:100px;white-space:pre-wrap;color:#fff}
+</style>
+</head>
+<body>
+<h1>J.A.R.V.I.S</h1>
+<div id="status">BRAIN: NOT CONNECTED</div>
+<textarea id="prompt" rows="4">Hello J.A.R.V.I.S</textarea>
+<button onclick="ask()">SEND REQUEST</button>
+<div id="reply">Waiting for response...</div>
+
+<script>
+// ⚠️ Paste a valid Google AI Studio API key here (do not commit real keys to public repos)
+const API_KEY = "YOUR_GEMINI_API_KEY";
+const MODEL = "gemini-2.5-flash";
+
+async function ask() {
+  const replyEl = document.getElementById("reply");
+  const statusEl = document.getElementById("status");
+
+  replyEl.innerText = "PROCESSING...";
+  statusEl.innerText = "CONNECTING...";
+  statusEl.style.color = "#ff0";
+
+  try {
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${encodeURIComponent(API_KEY)}`;
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [{ text: document.getElementById("prompt").value }]
+          }
+        ]
+      })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      statusEl.innerText = "API ERROR";
+      statusEl.style.color = "#f00";
+      replyEl.innerText = "ERROR: " + JSON.stringify(data, null, 2);
+      return;
+    }
+
+    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (text) {
+      replyEl.innerText = text;
+      statusEl.innerText = "BRAIN ONLINE";
+      statusEl.style.color = "#0f0";
+    } else {
+      statusEl.innerText = "UNEXPECTED RESPONSE";
+      statusEl.style.color = "#f00";
+      replyEl.innerText = "ERROR: " + JSON.stringify(data, null, 2);
+    }
+  } catch (e) {
+    replyEl.innerText = "NETWORK ERROR: " + e.message;
+    statusEl.innerText = "CONNECTION FAILED";
+    statusEl.style.color = "#f00";
+  }
+}
+</script>
+</body>
+</html>
